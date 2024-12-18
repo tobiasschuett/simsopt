@@ -153,8 +153,6 @@ class QuasisymmetryRatioResidual(Optimizable):
         """
         vmec = self.vmec
         vmec.run()
-        if vmec.wout.lasym:
-            raise RuntimeError('Quasisymmetry class cannot yet handle non-stellarator-symmetric configs')
 
         logger.debug('Evaluating quasisymmetry residuals')
         ns = len(self.surfaces)
@@ -192,6 +190,27 @@ class QuasisymmetryRatioResidual(Optimizable):
         interp = interp1d(vmec.s_half_grid, vmec.wout.bsupvmnc[:, 1:], fill_value="extrapolate")
         bsupvmnc = interp(self.surfaces)
 
+        if vmec.wout.lasym:
+            # get additional arrays for non-stellarator-symmetric case
+
+            interp = interp1d(vmec.s_half_grid, vmec.wout.gmns[:, 1:], fill_value="extrapolate")
+            gmns = interp(self.surfaces)
+
+            interp = interp1d(vmec.s_half_grid, vmec.wout.bmns[:, 1:], fill_value="extrapolate")
+            bmns = interp(self.surfaces)
+
+            interp = interp1d(vmec.s_half_grid, vmec.wout.bsubumns[:, 1:], fill_value="extrapolate")
+            bsubumns = interp(self.surfaces)
+
+            interp = interp1d(vmec.s_half_grid, vmec.wout.bsubvmns[:, 1:], fill_value="extrapolate")
+            bsubvmns = interp(self.surfaces)
+
+            interp = interp1d(vmec.s_half_grid, vmec.wout.bsupumns[:, 1:], fill_value="extrapolate")
+            bsupumns = interp(self.surfaces)
+
+            interp = interp1d(vmec.s_half_grid, vmec.wout.bsupvmns[:, 1:], fill_value="extrapolate")
+            bsupvmns = interp(self.surfaces)
+
         theta1d = np.linspace(0, 2 * np.pi, ntheta, endpoint=False)
         phi1d = np.linspace(0, 2 * np.pi / nfp, nphi, endpoint=False)
         phi2d, theta2d = np.meshgrid(phi1d, theta1d)
@@ -208,20 +227,36 @@ class QuasisymmetryRatioResidual(Optimizable):
         bsupu = np.zeros(myshape)
         bsupv = np.zeros(myshape)
         residuals3d = np.zeros(myshape)
-        for jmn in range(len(vmec.wout.xm_nyq)):
-            m = vmec.wout.xm_nyq[jmn]
-            n = vmec.wout.xn_nyq[jmn]
-            angle = m * theta3d - n * phi3d
-            cosangle = np.cos(angle)
-            sinangle = np.sin(angle)
-            modB += np.kron(bmnc[jmn, :].reshape((ns, 1, 1)), cosangle)
-            d_B_d_theta += np.kron(bmnc[jmn, :].reshape((ns, 1, 1)), -m * sinangle)
-            d_B_d_phi += np.kron(bmnc[jmn, :].reshape((ns, 1, 1)), n * sinangle)
-            sqrtg += np.kron(gmnc[jmn, :].reshape((ns, 1, 1)), cosangle)
-            bsubu += np.kron(bsubumnc[jmn, :].reshape((ns, 1, 1)), cosangle)
-            bsubv += np.kron(bsubvmnc[jmn, :].reshape((ns, 1, 1)), cosangle)
-            bsupu += np.kron(bsupumnc[jmn, :].reshape((ns, 1, 1)), cosangle)
-            bsupv += np.kron(bsupvmnc[jmn, :].reshape((ns, 1, 1)), cosangle)
+        if vmec.wout.lasym:
+            for jmn in range(len(vmec.wout.xm_nyq)):
+                m = vmec.wout.xm_nyq[jmn]
+                n = vmec.wout.xn_nyq[jmn]
+                angle = m * theta3d - n * phi3d
+                cosangle = np.cos(angle)
+                sinangle = np.sin(angle)
+                modB += np.kron(bmnc[jmn, :].reshape((ns, 1, 1)), cosangle) + np.kron(bmns[jmn, :].reshape((ns, 1, 1)), sinangle)
+                d_B_d_theta += np.kron(bmnc[jmn, :].reshape((ns, 1, 1)), -m * sinangle) + np.kron(bmns[jmn, :].reshape((ns, 1, 1)), m * cosangle)
+                d_B_d_phi += np.kron(bmnc[jmn, :].reshape((ns, 1, 1)), n * sinangle) + np.kron(bmns[jmn, :].reshape((ns, 1, 1)), -n * cosangle)
+                sqrtg += np.kron(gmnc[jmn, :].reshape((ns, 1, 1)), cosangle) + np.kron(gmns[jmn, :].reshape((ns, 1, 1)), sinangle)
+                bsubu += np.kron(bsubumnc[jmn, :].reshape((ns, 1, 1)), cosangle) + np.kron(bsubumns[jmn, :].reshape((ns, 1, 1)), sinangle)
+                bsubv += np.kron(bsubvmnc[jmn, :].reshape((ns, 1, 1)), cosangle) + np.kron(bsubvmns[jmn, :].reshape((ns, 1, 1)), sinangle)
+                bsupu += np.kron(bsupumnc[jmn, :].reshape((ns, 1, 1)), cosangle) + np.kron(bsupumns[jmn, :].reshape((ns, 1, 1)), sinangle)
+                bsupv += np.kron(bsupvmnc[jmn, :].reshape((ns, 1, 1)), cosangle) + np.kron(bsupvmns[jmn, :].reshape((ns, 1, 1)), sinangle)
+        else:
+            for jmn in range(len(vmec.wout.xm_nyq)):
+                m = vmec.wout.xm_nyq[jmn]
+                n = vmec.wout.xn_nyq[jmn]
+                angle = m * theta3d - n * phi3d
+                cosangle = np.cos(angle)
+                sinangle = np.sin(angle)
+                modB += np.kron(bmnc[jmn, :].reshape((ns, 1, 1)), cosangle)
+                d_B_d_theta += np.kron(bmnc[jmn, :].reshape((ns, 1, 1)), -m * sinangle)
+                d_B_d_phi += np.kron(bmnc[jmn, :].reshape((ns, 1, 1)), n * sinangle)
+                sqrtg += np.kron(gmnc[jmn, :].reshape((ns, 1, 1)), cosangle)
+                bsubu += np.kron(bsubumnc[jmn, :].reshape((ns, 1, 1)), cosangle)
+                bsubv += np.kron(bsubvmnc[jmn, :].reshape((ns, 1, 1)), cosangle)
+                bsupu += np.kron(bsupumnc[jmn, :].reshape((ns, 1, 1)), cosangle)
+                bsupv += np.kron(bsupvmnc[jmn, :].reshape((ns, 1, 1)), cosangle)
 
         B_dot_grad_B = bsupu * d_B_d_theta + bsupv * d_B_d_phi
         B_cross_grad_B_dot_grad_psi = d_psi_d_s * (bsubu * d_B_d_phi - bsubv * d_B_d_theta) / sqrtg
