@@ -529,7 +529,6 @@ class Vmec(Optimizable):
                 vi.zbs[101 + n, m] = boundary_RZFourier.get_zs(m, n)
 
                 if vi.lasym:
-                    logging.debug('TMS: NEW if-block to set non-stellarly symmetric boundary shape was called')
                     vi.rbs[101 + n, m] = boundary_RZFourier.get_rs(m, n)
                     vi.zbc[101 + n, m] = boundary_RZFourier.get_zc(m, n)
 
