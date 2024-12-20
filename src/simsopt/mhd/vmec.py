@@ -528,6 +528,11 @@ class Vmec(Optimizable):
                 vi.rbc[101 + n, m] = boundary_RZFourier.get_rc(m, n)
                 vi.zbs[101 + n, m] = boundary_RZFourier.get_zs(m, n)
 
+                if vi.lasym:
+                    logging.debug('TMS: NEW if-block to set non-stellarly symmetric boundary shape was called')
+                    vi.rbs[101 + n, m] = boundary_RZFourier.get_rs(m, n)
+                    vi.zbc[101 + n, m] = boundary_RZFourier.get_zc(m, n)
+
         # Set axis shape to something that is obviously wrong (R=0) to
         # trigger vmec's internal guess_axis.f to run. Otherwise the
         # initial axis shape for run N will be the final axis shape

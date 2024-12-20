@@ -192,6 +192,7 @@ class QuasisymmetryRatioResidual(Optimizable):
 
         if vmec.wout.lasym:
             # get additional arrays for non-stellarator-symmetric case
+            logger.debug('TMS: Evaluating quantities needed non-stellarator-symmetric quasi-symmetry residuals')
 
             interp = interp1d(vmec.s_half_grid, vmec.wout.gmns[:, 1:], fill_value="extrapolate")
             gmns = interp(self.surfaces)
